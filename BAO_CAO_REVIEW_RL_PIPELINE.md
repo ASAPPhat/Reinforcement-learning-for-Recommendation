@@ -1,110 +1,140 @@
-# Báo cáo Review Pipeline BERT4Rec + Actor-Critic (Offline RL)
+# Báo cáo: Sửa & Đánh giá Pipeline BERT4Rec + RL (Actor-Critic)
 
 **Ngày:** 2026-06-18
-**Phạm vi:** `optimzie_bert_rl_pipeline.ipynb`, `Bert4Rec_model.py`
-**Dataset:** MovieLens-1M
-**Baseline tham chiếu:** BERT4Rec (Sun et al., 2019)
+**File:** `optimzie_bert_rl_pipeline.ipynb`
+**Dữ liệu:** MovieLens-1M · **So sánh:** BERT4Rec (Sun et al. 2019)
 
 ---
 
-## 1. Bối cảnh & Vấn đề lõi
+## 1. Mục tiêu & câu hỏi
 
-Kiến trúc hiện tại: BERT4Rec (đóng băng) encode lịch sử → `state` (vector 64-dim), Actor MLP biến `state` → `action`, rồi xếp hạng item bằng độ tương đồng giữa `action` và bảng item embedding.
+Ý tưởng ban đầu: dùng BERT4Rec đoán phim, rồi thêm một mạng RL (Actor-Critic) lên trên để **gợi ý tốt hơn** (vượt Hit@k/NDCG của BERT4Rec).
 
-**Vấn đề bản chất:** `state` mà BERT4Rec sinh ra **đã chính là dự đoán item kế tiếp** (BERT chấm điểm bằng `state · item_embedding + output_bias`). Actor lấy `state` đó rồi sinh ra một vector cũng nằm trong **cùng không gian item embedding**, đánh giá bằng cùng cơ chế truy hồi. Nghĩa là **RL và BERT đang làm chung một task (đoán next-item)**, RL chỉ là một mạng neural thừa đẩy vector "đẹp sẵn" của BERT sang một vùng nhiễu hơn, chưa được học.
-
-Hệ quả: trần hiệu năng của pipeline = BERT4Rec. RL **không thể vượt** BERT trên metric next-item (Hit@k/NDCG) nếu không thay đổi hướng tiếp cận. Tốt nhất chỉ **hòa** BERT, thực tế thường **kém hơn**.
+Câu hỏi cốt lõi cần trả lời: **RL có thực sự làm tốt hơn BERT không?**
 
 ---
 
-## 2. Xác nhận kiến trúc (đã kiểm tra mã nguồn)
+## 2. Pipeline hoạt động thế nào (cách hiểu đơn giản)
 
-- **Tied weights — ĐÚNG.** `Bert4Rec_model.py:468` (`full_sort_predict`): điểm số = `seq_output @ item_embedding.weight[:n_items].T + output_bias`. State sống cùng không gian với item embedding, chấm bằng **dot product + bias**.
-- **State = dự đoán BERT.** `forward()` trả vector sau `output_ffn → GELU → LayerNorm`; `get_state` lấy đúng vector này tại vị trí `[mask]`.
+```
+Lịch sử xem phim ──► BERT4Rec (đóng băng) ──► "state" (1 vector mô tả sở thích user)
+                                                   │
+                                          Actor (mạng RL nhỏ)
+                                                   │
+                                              "action" (1 vector)
+                                                   │
+                              so độ giống action với từng phim ──► xếp hạng gợi ý
+```
 
----
+- **BERT4Rec**: đã train sẵn, **không học thêm** (đóng băng). Nó biến lịch sử xem → 1 vector dự đoán.
+- **Actor**: mạng nhỏ, nhận vector của BERT, nhả ra vector mới.
+- **Critic**: chấm điểm "vector này đáng giá bao nhiêu" dựa trên **rating** thật user chấm.
+- Gợi ý = xếp phim theo độ giống với "action".
 
-## 3. Danh sách lỗi (xếp theo mức độ nghiêm trọng)
-
-### 🔴 Nghiêm trọng — làm hỏng kết quả
-
-**Lỗi 1 — Padding nhiễm vào state khi train; train/eval lệch phân phối.**
-`collate_fn` pad số 0 vào đuôi history. Vòng lặp train gọi `encoder.get_state()` với list đã pad. Trong `get_state`, `item_seq_len` được tính bằng độ dài **sau khi pad** (vì id 0 không phân biệt được với item thật), nên token `[mask]` bị đặt ở **cuối chuỗi pad** thay vì ngay sau item thật. Position embedding và vị trí mask sai.
-- Khi **eval**, history truyền vào là list thô (chưa pad) → `item_seq_len` đúng.
-- ⇒ **State lúc train ≠ state lúc eval.** Critic/Actor học trên state hỏng, đánh giá trên state đúng.
-
-**Lỗi 2 — Rò rỉ dữ liệu test (data leakage).**
-`load_offline_data_custom` dùng `for i in range(1, len(seq))`, bao gồm `i = len-1` ⇒ target = item cuối cùng. `prepare_rl_test_data` lại lấy chính `seq[-1]` làm test. ⇒ mẫu test nằm trong tập train. Paper dùng leave-one-out: bỏ item cuối (test) + áp cuối (validation).
-
-**Lỗi 3 — Eval bỏ `output_bias` và dùng cosine thay dot product.**
-`evaluate_paper_standard` / `evaluate_full_rank` chấm điểm bằng `F.cosine_similarity`, bỏ `output_bias`. BERT4Rec thật chấm `dot + output_bias`. ⇒ Tự cắt điểm; ngay cả khi Actor ≈ identity cũng không tái tạo được hiệu năng BERT thật.
-
-### 🟠 Vừa — lệch mục tiêu / thổi phồng số
-
-**Lỗi 4 — `beta=0.5` quá lớn.**
-Actor: `final_action = normalize(state + beta * residual)`. Định nghĩa mặc định `beta=0.05` nhưng khởi tạo thực tế `beta=0.5` (gấp 10 lần). Residual kéo `action` đi xa khỏi `state` (BERT) ⇒ đẩy vào vùng vector nhiễu — đúng vấn đề lõi đã nêu.
-
-**Lỗi 5 — Reward (rating) lệch với metric (next-item).**
-`get_reward_from_rating` tối ưu rating cao; eval đo đoán đúng item kế tiếp bất kể rating. Hai mục tiêu kéo ngược nhau ⇒ thành phần RL làm hại Hit@k.
-
-**Lỗi 6 — Negative sampling uniform thay vì theo popularity.**
-`evaluate_paper_standard`: `neg = random.randint(...)`. Paper sample 100 negative **theo độ phổ biến (popularity)**. Uniform dễ hơn ⇒ số bị **thổi phồng giả tạo**, không so sánh được với paper.
-
-**Lỗi 7 — `n_items=3707` ≠ paper (3416).**
-Kích thước pool item khác ⇒ Hit@k khác bản chất, không so trực tiếp với số paper.
-
-### 🟡 Nhẹ — lãng phí, không sai logic
-
-**Lỗi 8 — Re-push buffer và chạy BERT forward lại mỗi epoch.** Buffer 500k < 970k mẫu nên chỉ là cửa sổ trượt; BERT forward lặp 50 lần vô ích. Nên cache state một lần.
-
-**Lỗi 9 — `CRITIC_WARMUP=4000` + `UPDATE_EVERY=10`.** Actor không cập nhật tới ~epoch 11. Chậm khởi động, không sai.
+**Vấn đề tư duy ngay từ đầu:** vector của BERT (`state`) **đã chính là dự đoán phim kế tiếp rồi**. Actor lấy nó rồi nhả ra vector cũng để đoán phim kế tiếp → **RL và BERT làm CÙNG một việc**. Thêm RL = bắt một mạng chưa học vẽ lại thứ BERT đã làm tốt → dễ làm hỏng.
 
 ---
 
-## 4. Đề xuất phương án sửa
+## 3. Các lỗi đã tìm thấy (giải thích đơn giản)
 
-### 4.1. Sửa bắt buộc (đúng đắn về phương pháp)
-
-| # | Lỗi | Cách sửa |
-|---|-----|----------|
-| 1 | Padding nhiễm state | `collate_fn` trả thêm độ dài thật, hoặc không pad trong collate (để `get_state` tự xử lý list thô như lúc eval). Đảm bảo `item_seq_len` = độ dài thật. |
-| 2 | Leakage | `for i in range(1, len(seq) - 2)` — chừa item cuối (test) + áp cuối (val). |
-| 3 | Eval scoring | `scores = actions @ item_emb.T + output_bias` (dot + bias), bỏ cosine. |
-| 4 | beta lớn | Đặt `beta=0.05`. |
-
-### 4.2. Sửa để so sánh công bằng với paper
-
-- **Negative sampling theo popularity** (Lỗi 6): sample 100 negative theo phân phối tần suất tương tác, không uniform.
-- **Khớp số lượng item / tiền xử lý** với paper (Lỗi 7), hoặc **tự đo baseline BERT4Rec ngay trong harness này** thay vì lấy số paper. Đây là baseline đúng để RL so kè.
-
-### 4.3. Số tham chiếu paper (ML-1M, popularity-neg, dot+bias)
-
-| Metric | BERT4Rec |
-|--------|----------|
-| HR@1   | 0.2863 |
-| HR@5   | 0.5876 |
-| HR@10  | 0.6970 |
-| NDCG@5 | 0.4454 |
-| NDCG@10| 0.4818 |
-| MRR    | 0.4254 |
-
-> Lưu ý: chỉ được so với các số này **khi đã khớp protocol** (leave-one-out + popularity-sampled 100 negatives + dot+bias + cùng pool item). Khác protocol = so sánh vô nghĩa.
+| # | Lỗi | Nói dễ hiểu | Hậu quả |
+|---|-----|-------------|---------|
+| 1 | **TD3+BC cài sai** | Công thức huấn luyện Actor để "điểm thưởng" (Q) lớn gấp ~10 lần phần "bắt chước item thật" → Actor bỏ bê việc bám phim thật, chạy lung tung. | Model **sụp đổ**, gợi ý ≈ ngẫu nhiên. |
+| 2 | **beta quá lớn (0.5)** | Cho phép Actor đẩy vector đi **xa** vector BERT. | Rời khỏi vùng "đẹp" của BERT → kém. |
+| 3 | **Rò rỉ dữ liệu** | Tập train chứa luôn phim dùng để test (đáp án). | Điểm bị **thổi phồng**, không trung thực. |
+| 4 | **Lỗi padding** | Khi train, chuỗi bị chèn số 0 sai chỗ → vector lúc train **khác** lúc test. | Học một đằng, chấm một nẻo. |
+| 5 | **Chấm điểm sai cách** | Lúc đánh giá dùng "cosine" và bỏ `bias`, trong khi BERT gốc chấm bằng "tích vô hướng + bias". | Tự cắt điểm của chính BERT. |
+| 6 | **Chậm** | Mỗi epoch encode lại toàn bộ ~958k mẫu qua BERT (dù BERT đóng băng, kết quả không đổi). | Lãng phí thời gian khổng lồ. |
+| 7 | **Không có early-stop** | Train cứng 50 epoch, lưu Actor cuối (đã trôi xa). | Lưu nhầm model tệ. |
 
 ---
 
-## 5. Phân tích trần hiệu năng
+## 4. Đã sửa những gì & sửa thế nào
 
-- **Giữ nguyên hướng (Actor → embedding, eval ranking):** trần = BERT4Rec. Sau khi sửa Lỗi 1–4, kết quả tốt nhất ≈ hòa BERT. RL không thêm giá trị cho metric next-item.
-- **Muốn THỰC SỰ vượt BERT:** phải đổi hướng — RL **rerank trên logit BERT** (khởi tạo điều chỉnh = 0 ⇒ init == BERT ⇒ trần ≥ BERT, RL chỉ nhích lên), hoặc đổi sang metric **giá trị/rating dài hạn** (không còn là Hit@k next-item).
+| # | Trước (sai) | Sau (đã sửa) |
+|---|-------------|--------------|
+| 1 | `actor_loss = -Q + 2.5·MSE` (Q thô, áp đảo) | **Chuẩn hoá Q**: `lmbda = 2.5 / |Q|trung_bình`; `loss = -lmbda·Q + MSE`. Giờ phần "bắt chước phim thật" cân được với điểm thưởng → Actor không chạy lung tung nữa. |
+| 2 | `beta = 0.5` | `beta = 0.05` → Actor chỉ **nhích nhẹ** quanh vector BERT, không bay xa. |
+| 3 | Train dùng cả phim cuối | **Leave-one-out**: phim cuối = test, áp cuối = validation, còn lại = train. Không trùng đáp án. |
+| 4 | `collate_fn` chèn số 0 → độ dài sai | Bỏ chèn 0, trả lịch sử **thô** → vector lúc train = lúc test. |
+| 5 | (đánh giá nội bộ) cosine, bỏ bias | Thêm bảng đánh giá **đúng chuẩn paper**: tích vô hướng + `bias`, negative theo độ phổ biến. |
+| 6 | Encode lại mỗi epoch | **Encode 1 lần, lưu cache**; 50 epoch sau chỉ chạy update RL → nhanh hơn ~50 lần/epoch. |
+| 7 | Không có | **Early-stop**: mỗi epoch chấm Hit@10 trên validation, giữ **Actor tốt nhất**, dừng nếu 5 epoch liền không cải thiện. |
+
+**Thêm mới:** bộ hàm đánh giá công bằng (`compute_actions`, `eval_full`, `eval_sampled`), tạo 2 tập test (`leave_one_out`, `liked r≥4`), bảng so **BERT vs RL**, và bảng **so với paper**.
 
 ---
 
-## 6. Việc cần làm tiếp (checklist)
+## 5. Logic/kiến trúc: TRƯỚC vs SAU
 
-- [ ] Sửa Lỗi 1 (padding/length) — ưu tiên cao nhất
-- [ ] Sửa Lỗi 2 (leakage) — leave-one-out
-- [ ] Sửa Lỗi 3 (dot + bias trong eval)
-- [ ] Đặt `beta=0.05` (Lỗi 4)
-- [ ] Tự đo baseline BERT4Rec trong harness (so kè đúng)
-- [ ] (Nếu so paper) popularity negative sampling + khớp pool item
-- [ ] Quyết định hướng: rerank-trên-logit (vượt Hit@k) hay metric giá trị dài hạn
+**TRƯỚC (hỏng):**
+```
+mỗi epoch: encode lại 958k mẫu qua BERT  ──►  train Actor với công thức sai (Q áp đảo)
+           Actor bay khỏi vùng BERT  ──►  chấm bằng cosine, có rò rỉ, lưu Actor cuối
+→ Kết quả: gợi ý ≈ ngẫu nhiên (Hit@10 full-rank = 0.01)
+```
+
+**SAU (đúng):**
+```
+ENCODE 1 LẦN ─► cache (S, A, R, next-S)
+        │
+   train Actor: TD3+BC chuẩn (Q chuẩn hoá), beta nhỏ ─► Actor bám sát BERT, chỉ nhích nhẹ
+        │
+   mỗi epoch: chấm VAL Hit@10 ─► giữ BEST ─► EARLY STOP
+        │
+   đánh giá: (a) cosine nội bộ BERT-vs-RL  (b) đúng chuẩn paper (dot+bias, popularity)
+→ Kết quả: số thực, hợp lý, công bằng, tái lập được
+```
+
+Điểm mấu chốt: kiến trúc **không đổi bản chất** (vẫn Actor → vector → xếp hạng), nhưng giờ Actor **khởi đầu = BERT** và chỉ nhích nhẹ, cộng cách đo trung thực → ta thấy được **sự thật**.
+
+---
+
+## 6. Kết quả sau khi sửa
+
+### 6.1. Hết "sụp đổ"
+- Trước: full-rank Hit@10 = **0.0101** (≈ ngẫu nhiên).
+- Sau: full-rank Hit@10 ≈ **0.19**, sampled ≈ **0.79**. Số thật.
+
+### 6.2. Đường validation lúc train (rất quan trọng)
+```
+VAL Hit@10:  0.1915 → 0.062 → 0.030 → 0.030 → 0.031 → 0.026  → EARLY STOP (epoch 16)
+```
+→ **Càng train RL, gợi ý càng tệ.** Early-stop giữ lại Actor ở điểm đầu (≈ BERT). Loss nhìn "đẹp" nhưng đánh lừa — chỉ chỉ số validation mới lộ ra sự thật.
+
+### 6.3. So BERT vs RL (đo nội bộ, cosine) — leave-one-out
+
+| | Hit@10 (full-rank) | Hit@10 (sampled-100) |
+|---|---|---|
+| BERT (không RL) | **0.1932** | **0.7885** |
+| RL (TD3+BC) | 0.1911 | 0.7875 |
+
+→ RL **bằng hoặc thua nhẹ** BERT. Không thêm giá trị.
+
+### 6.4. So với PAPER (đúng chuẩn: dot+bias, 100 neg popularity)
+
+| Model | HR@1 | HR@5 | HR@10 | NDCG@10 | MRR |
+|---|---|---|---|---|---|
+| **Paper BERT4Rec** | 0.2863 | 0.5876 | **0.6970** | 0.4818 | 0.4254 |
+| **BERT (của bạn)** | 0.2775 | 0.5647 | **0.6785** | 0.4658 | 0.4115 |
+| RL (TD3+BC) | 0.1055 | 0.3411 | 0.5058 | 0.2783 | 0.2289 |
+
+**Đọc bảng:**
+- **BERT của bạn đạt chuẩn paper** (HR@10 0.6785 vs 0.6970, lệch ~2.7% do pool item 3707 vs 3416 + khác seed). → BERT4Rec train **đúng, tốt**.
+- RL thấp hẳn (0.5058) ở đây **không phải vì RL kém thật**, mà vì RL nhả ra vector **đã chuẩn hoá (mất độ lớn)**, không khớp cách chấm "dot+bias" của BERT. Tức RL **hạ cấp** cách chấm điểm mạnh của BERT xuống cosine → mất thông tin.
+
+---
+
+## 7. Kết luận
+
+1. **Pipeline giờ đúng đắn, trung thực, tái lập được.** Đã diệt: sụp đổ, rò rỉ, padding sai, chấm sai, chậm; thêm early-stop.
+2. **BERT4Rec của bạn ngang paper** (~0.68 vs 0.70 HR@10). Đây là baseline thật.
+3. **RL KHÔNG vượt BERT.** Lý do gốc: RL và BERT làm cùng một việc (đoán phim kế tiếp), nên trần của RL chính là BERT. Tệ hơn, việc RL chuẩn hoá vector còn làm mất thông tin "độ lớn + bias" mà BERT đang dùng → kém tương thích.
+4. **Bài học:** không thể vượt BERT bằng cách thay cách chấm điểm của nó (dot+bias) bằng cosine.
+
+---
+
+## 8. Muốn THỰC SỰ vượt BERT → đổi hướng (chưa làm)
+
+- **Cách 1 — Rerank trên điểm BERT:** giữ nguyên `điểm = state·item + bias` của BERT, RL chỉ **cộng thêm một chỉnh sửa nhỏ Δ**, khởi đầu Δ = 0 (tức bằng đúng BERT) → đảm bảo **không bao giờ tệ hơn BERT**, chỉ có thể tốt lên.
+- **Cách 2 — Đổi mục tiêu:** cho RL tối ưu thứ BERT không làm (giá trị xem dài hạn, độ đa dạng, sắp xếp cả danh sách) — nhưng khi đó dùng thước đo khác, không còn là Hit@k next-item.
