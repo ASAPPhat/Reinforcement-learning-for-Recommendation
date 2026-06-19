@@ -1,0 +1,109 @@
+wandb: [wandb.login()] Using explicit session credentials for https://api.wandb.ai.
+wandb: Appending key for api.wandb.ai to your netrc file: C:\Users\TanPhat\_netrc
+wandb: Currently logged in as: lamgiang (lamgiang-fpt-university) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+[*] Device cuda
+[*] STATS: {"n_users": 6040, "n_items": 3706, "n_interactions": 1000209, "n_train_remaining": 800193, "n_test": 200016, "avg_seq_len": 165.6, "avg_test_len": 33.12, "test_frac": 0.2, "max_len": 200}
+wandb: WARNING Using a boolean value for 'reinit' is deprecated. Use 'return_previous' or 'finish_previous' instead.
+wandb: setting up run wdhexav1
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in F:\1_REL\Reinforcement-learning-for-Recommendation\longterm_rerank\wandb\run-20260619_123838-wdhexav1
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run bert4rec-retrain
+wandb:  View project at https://wandb.ai/lamgiang-fpt-university/bert4rec-longterm-rerank
+wandb:  View run at https://wandb.ai/lamgiang-fpt-university/bert4rec-longterm-rerank/runs/wdhexav1
+[BERT] ep 01/80  loss=8.1773 acc=0.05%  VAL NDCG@10=0.0154  <- best
+[BERT] ep 02/80  loss=8.0520 acc=0.18%  VAL NDCG@10=0.0234  <- best
+[BERT] ep 03/80  loss=7.9156 acc=0.16%  VAL NDCG@10=0.0257  <- best
+[BERT] ep 04/80  loss=7.7952 acc=0.15%  VAL NDCG@10=0.0283  <- best
+[BERT] ep 05/80  loss=7.6947 acc=0.16%  VAL NDCG@10=0.0305  <- best
+[BERT] ep 06/80  loss=7.6148 acc=0.21%  VAL NDCG@10=0.0320  <- best
+[BERT] ep 07/80  loss=7.5511 acc=0.42%  VAL NDCG@10=0.0371  <- best
+[BERT] ep 08/80  loss=7.4983 acc=0.57%  VAL NDCG@10=0.0391  <- best
+[BERT] ep 09/80  loss=7.4549 acc=0.60%  VAL NDCG@10=0.0385 (best 0.0391,1/10)
+[BERT] ep 10/80  loss=7.4196 acc=0.65%  VAL NDCG@10=0.0389 (best 0.0391,2/10)
+[BERT] ep 11/80  loss=7.3946 acc=0.65%  VAL NDCG@10=0.0395  <- best
+[BERT] ep 12/80  loss=7.3757 acc=0.66%  VAL NDCG@10=0.0394 (best 0.0395,1/10)
+[BERT] ep 13/80  loss=7.3609 acc=0.68%  VAL NDCG@10=0.0400  <- best
+[BERT] ep 14/80  loss=7.3473 acc=0.68%  VAL NDCG@10=0.0399 (best 0.0400,1/10)
+[BERT] ep 15/80  loss=7.3322 acc=0.69%  VAL NDCG@10=0.0399 (best 0.0400,2/10)
+[BERT] ep 16/80  loss=7.3311 acc=0.67%  VAL NDCG@10=0.0397 (best 0.0400,3/10)
+[BERT] ep 17/80  loss=7.3214 acc=0.69%  VAL NDCG@10=0.0395 (best 0.0400,4/10)
+[BERT] ep 18/80  loss=7.3205 acc=0.66%  VAL NDCG@10=0.0396 (best 0.0400,5/10)
+[BERT] ep 19/80  loss=7.3123 acc=0.67%  VAL NDCG@10=0.0387 (best 0.0400,6/10)
+[BERT] ep 20/80  loss=7.3098 acc=0.67%  VAL NDCG@10=0.0382 (best 0.0400,7/10)
+[BERT] ep 21/80  loss=7.3045 acc=0.68%  VAL NDCG@10=0.0385 (best 0.0400,8/10)
+[BERT] ep 22/80  loss=7.3059 acc=0.68%  VAL NDCG@10=0.0381 (best 0.0400,9/10)
+[BERT] ep 23/80  loss=7.3036 acc=0.67%  VAL NDCG@10=0.0383 (best 0.0400,10/10)
+[BERT] EARLY STOP ep 23, best VAL NDCG@10=0.0400
+wandb: updating run metadata
+wandb: uploading history steps 17-22, summary, console lines 17-23
+wandb: 
+wandb: Run summary:
+wandb:        bert/acc 0.67131
+wandb:      bert/epoch 23
+wandb:       bert/loss 7.30363
+wandb: bert/val_ndcg10 0.03833
+wandb: 
+wandb:  View run bert4rec-retrain at: https://wandb.ai/lamgiang-fpt-university/bert4rec-longterm-rerank/runs/wdhexav1
+wandb:  View project at: https://wandb.ai/lamgiang-fpt-university/bert4rec-longterm-rerank
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: .\wandb\run-20260619_123838-wdhexav1\logs
+wandb: setting up run ua4zygqb
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in F:\1_REL\Reinforcement-learning-for-Recommendation\longterm_rerank\wandb\run-20260619_123948-ua4zygqb
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run rl-rerank-ac
+wandb:  View project at https://wandb.ai/lamgiang-fpt-university/bert4rec-longterm-rerank
+wandb:  View run at https://wandb.ai/lamgiang-fpt-university/bert4rec-longterm-rerank/runs/ua4zygqb
+[RL] ep 01/30  train_reward(NDCG@10)=0.0529  VAL NDCG@10=0.0307  <- best
+[RL] ep 02/30  train_reward(NDCG@10)=0.0541  VAL NDCG@10=0.0305 (best 0.0307,1/8)
+[RL] ep 03/30  train_reward(NDCG@10)=0.0502  VAL NDCG@10=0.0307 (best 0.0307,2/8)
+[RL] ep 04/30  train_reward(NDCG@10)=0.0534  VAL NDCG@10=0.0307 (best 0.0307,3/8)
+[RL] ep 05/30  train_reward(NDCG@10)=0.0514  VAL NDCG@10=0.0316  <- best
+[RL] ep 06/30  train_reward(NDCG@10)=0.0521  VAL NDCG@10=0.0312 (best 0.0316,1/8)
+[RL] ep 07/30  train_reward(NDCG@10)=0.0534  VAL NDCG@10=0.0316 (best 0.0316,2/8)
+[RL] ep 08/30  train_reward(NDCG@10)=0.0522  VAL NDCG@10=0.0335  <- best
+[RL] ep 09/30  train_reward(NDCG@10)=0.0514  VAL NDCG@10=0.0350  <- best
+[RL] ep 10/30  train_reward(NDCG@10)=0.0505  VAL NDCG@10=0.0360  <- best
+[RL] ep 11/30  train_reward(NDCG@10)=0.0532  VAL NDCG@10=0.0367  <- best
+[RL] ep 12/30  train_reward(NDCG@10)=0.0533  VAL NDCG@10=0.0377  <- best
+[RL] ep 13/30  train_reward(NDCG@10)=0.0540  VAL NDCG@10=0.0381  <- best
+[RL] ep 14/30  train_reward(NDCG@10)=0.0495  VAL NDCG@10=0.0378 (best 0.0381,1/8)
+[RL] ep 15/30  train_reward(NDCG@10)=0.0530  VAL NDCG@10=0.0380 (best 0.0381,2/8)
+[RL] ep 16/30  train_reward(NDCG@10)=0.0512  VAL NDCG@10=0.0393  <- best
+[RL] ep 17/30  train_reward(NDCG@10)=0.0520  VAL NDCG@10=0.0397  <- best
+[RL] ep 18/30  train_reward(NDCG@10)=0.0507  VAL NDCG@10=0.0391 (best 0.0397,1/8)
+[RL] ep 19/30  train_reward(NDCG@10)=0.0539  VAL NDCG@10=0.0381 (best 0.0397,2/8)
+[RL] ep 20/30  train_reward(NDCG@10)=0.0537  VAL NDCG@10=0.0379 (best 0.0397,3/8)
+[RL] ep 21/30  train_reward(NDCG@10)=0.0540  VAL NDCG@10=0.0383 (best 0.0397,4/8)
+[RL] ep 22/30  train_reward(NDCG@10)=0.0540  VAL NDCG@10=0.0375 (best 0.0397,5/8)
+[RL] ep 23/30  train_reward(NDCG@10)=0.0525  VAL NDCG@10=0.0388 (best 0.0397,6/8)
+[RL] ep 24/30  train_reward(NDCG@10)=0.0500  VAL NDCG@10=0.0386 (best 0.0397,7/8)
+[RL] ep 25/30  train_reward(NDCG@10)=0.0498  VAL NDCG@10=0.0386 (best 0.0397,8/8)
+[RL] EARLY STOP ep 25, best VAL NDCG@10=0.0397
+wandb: updating run metadata
+wandb: uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading history steps 18-24, summary, console lines 18-25
+wandb: 
+wandb: Run summary:
+wandb:        rl/epoch 25
+wandb: rl/train_reward 0.04978
+wandb:   rl/val_ndcg10 0.03862
+wandb: 
+wandb:  View run rl-rerank-ac at: https://wandb.ai/lamgiang-fpt-university/bert4rec-longterm-rerank/runs/ua4zygqb
+wandb:  View project at: https://wandb.ai/lamgiang-fpt-university/bert4rec-longterm-rerank
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: .\wandb\run-20260619_123948-ua4zygqb\logs
+Traceback (most recent call last):
+  File "F:\1_REL\Reinforcement-learning-for-Recommendation\longterm_rerank\run_pipeline.py", line 274, in <module>
+    main()
+  File "F:\1_REL\Reinforcement-learning-for-Recommendation\longterm_rerank\run_pipeline.py", line 262, in main
+    print("\n[*] \u0110ÁNH GIÁ TRÊN TEST (graded NDCG / Recall / MeanRating)")
+  File "C:\Users\TanPhat\AppData\Roaming\Python\Python311\site-packages\wandb\sdk\lib\console_capture.py", line 183, in write_with_callbacks
+    n = orig_write(s)
+        ^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u0110' in position 6: character maps to <undefined>
+EXIT=1

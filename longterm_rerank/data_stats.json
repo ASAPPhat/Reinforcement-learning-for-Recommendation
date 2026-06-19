@@ -1,0 +1,11 @@
+{
+  "n_users": 6040,
+  "n_items": 3706,
+  "n_interactions": 1000209,
+  "n_train_remaining": 800193,
+  "n_test": 200016,
+  "avg_seq_len": 165.6,
+  "avg_test_len": 33.12,
+  "test_frac": 0.2,
+  "max_len": 200
+}
