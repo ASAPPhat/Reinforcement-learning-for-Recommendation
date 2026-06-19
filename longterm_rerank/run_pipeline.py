@@ -79,16 +79,24 @@ def eval_bert(bert, users, device, ks=(5,10,20), topk=50, subset=None):
 # RL re-ranker: Actor (policy) + Critic (value baseline). KHÔNG TD3+BC.
 # =====================================================================
 class PolicyNet(nn.Module):
-    """score(candidate) = MLP([state, cand_emb]).  Init ngẫu nhiên (thuần RL)."""
-    def __init__(self, dim):
+    """ADDITIVE trên logit BERT:  final = bert_logit + beta * delta(state, cand_emb, logit_norm).
+       Lớp cuối init = 0 -> delta = 0 -> final = bert_logit -> thứ tự khởi đầu = BERT
+       => SÀN >= BERT (init=BERT). #2: đưa luôn điểm BERT (chuẩn hoá) làm feature."""
+    def __init__(self, dim, beta=1.0):
         super().__init__()
-        self.net = nn.Sequential(nn.Linear(2*dim, 256), nn.ReLU(),
+        self.beta = beta
+        self.net = nn.Sequential(nn.Linear(2*dim + 1, 256), nn.ReLU(),
                                  nn.Linear(256, 64), nn.ReLU(), nn.Linear(64, 1))
-    def forward(self, state, cand_emb):           # state [B,H], cand_emb [B,N,H]
+        nn.init.zeros_(self.net[-1].weight); nn.init.zeros_(self.net[-1].bias)   # init delta=0
+    def forward(self, state, cand_emb, cand_logit):   # [B,H], [B,N,H], [B,N]
         B, N, H = cand_emb.shape
         s = state.unsqueeze(1).expand(-1, N, -1)
-        x = torch.cat([s, cand_emb], dim=-1)
-        return self.net(x).squeeze(-1)            # [B,N]
+        mu = cand_logit.mean(1, keepdim=True)
+        sd = cand_logit.std(1, keepdim=True).clamp(min=1e-6)
+        feat = ((cand_logit - mu) / sd).unsqueeze(-1)          # logit BERT chuẩn hoá làm feature
+        x = torch.cat([s, cand_emb, feat], dim=-1)
+        delta = self.net(x).squeeze(-1)                        # init = 0
+        return cand_logit + self.beta * delta                 # base = logit BERT (raw)
 
 class ValueNet(nn.Module):
     def __init__(self, dim):
@@ -118,9 +126,11 @@ def _bert_candidates(bert, states, topN):
     bias = bert.output_bias
     sc = states @ item_emb.T + bias
     sc[:, 0] = -1e9
-    cand_ids = torch.topk(sc, topN, dim=1).indices           # [B,topN] (item ids)
+    top = torch.topk(sc, topN, dim=1)
+    cand_ids = top.indices                                   # [B,topN] (item ids)
+    cand_logit = top.values                                  # [B,topN] điểm BERT
     cand_emb = item_emb[cand_ids]                            # [B,topN,H]
-    return cand_ids, cand_emb
+    return cand_ids, cand_emb, cand_logit
 
 
 def train_rl(bert, users, device, epochs=30, bs=512, topN=100, K=10,
@@ -147,9 +157,9 @@ def train_rl(bert, users, device, epochs=30, bs=512, topN=100, K=10,
             bidx = perm[i:i+bs]
             st = S[bidx].to(device)
             rels = [rl_rel[j] for j in bidx]
-            cand_ids, cand_emb = _bert_candidates(bert, st, topN)
+            cand_ids, cand_emb, cand_logit = _bert_candidates(bert, st, topN)
             gains = _cand_gains(cand_ids, rels).to(device)           # [B,topN]
-            scores = policy(st, cand_emb)                            # [B,topN]
+            scores = policy(st, cand_emb, cand_logit)                # [B,topN]
 
             # ---- sample top-K permutation (Plackett-Luce), REINFORCE ----
             avail = torch.ones_like(scores, dtype=torch.bool)
@@ -204,8 +214,8 @@ def eval_rl(bert, policy, users, device, target="test", ks=(5,10,20), topN=100):
     rankings = []
     for i in range(0, S.shape[0], 256):
         st = S[i:i+256]
-        cand_ids, cand_emb = _bert_candidates(bert, st, topN)
-        sc = policy(st, cand_emb)                                 # [b,topN]
+        cand_ids, cand_emb, cand_logit = _bert_candidates(bert, st, topN)
+        sc = policy(st, cand_emb, cand_logit)                     # [b,topN]
         order = torch.argsort(sc, dim=1, descending=True)         # rerank
         reranked = torch.gather(cand_ids, 1, order)               # ids theo thứ tự policy
         rankings.extend(reranked.cpu().numpy().tolist())
