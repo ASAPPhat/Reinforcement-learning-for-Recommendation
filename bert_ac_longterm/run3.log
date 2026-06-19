@@ -1,0 +1,131 @@
+Input Notebook:  3_actor_critic_norerank.ipynb
+Output Notebook: 3_actor_critic_norerank.ipynb
+Executing notebook with kernel: python3
+Executing Cell 1---------------------------------------
+Ending Cell 1------------------------------------------
+Executing Cell 2---------------------------------------
+Device: cuda
+
+Ending Cell 2------------------------------------------
+Executing Cell 3---------------------------------------
+Ending Cell 3------------------------------------------
+Executing Cell 4---------------------------------------
+[+] helpers ready
+
+Ending Cell 4------------------------------------------
+Executing Cell 5---------------------------------------
+Ending Cell 5------------------------------------------
+Executing Cell 6---------------------------------------
+{
+  "n_users": 6040,
+  "n_items": 3706,
+  "n_interactions": 1000209,
+  "n_train_remaining": 800193,
+  "n_test": 200016,
+  "avg_seq_len": 165.6,
+  "avg_test_len": 33.12,
+  "test_frac": 0.2,
+  "max_len": 200
+}
+BERT loaded & frozen
+
+C:\Users\TanPhat\AppData\Local\Temp\ipykernel_34588\2848081563.py:7: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  bert.load_state_dict(torch.load(os.path.join(HERE,"bert4rec.pth"), map_location=DEVICE)); bert.eval()
+
+Ending Cell 6------------------------------------------
+Executing Cell 7---------------------------------------
+Ending Cell 7------------------------------------------
+Executing Cell 8---------------------------------------
+[+] Actor-Critic NO-RERANK defined
+
+Ending Cell 8------------------------------------------
+Executing Cell 9---------------------------------------
+Ending Cell 9------------------------------------------
+Executing Cell 10--------------------------------------
+[34m[1mwandb[0m: [33mWARNING[0m If you're specifying your api key in code, ensure this code is not shared publicly.
+[34m[1mwandb[0m: [33mWARNING[0m Consider setting the WANDB_API_KEY environment variable, or running `wandb login` from the command line.
+
+[34m[1mwandb[0m: [wandb.login()] Using explicit session credentials for https://api.wandb.ai.
+
+[34m[1mwandb[0m: Appending key for api.wandb.ai to your netrc file: C:\Users\TanPhat\_netrc
+
+[34m[1mwandb[0m: Currently logged in as: [33mlamgiang[0m ([33mlamgiang-fpt-university[0m) to [32mhttps://api.wandb.ai[0m. Use [1m`wandb login --relogin`[0m to force relogin
+
+[34m[1mwandb[0m: [33mWARNING[0m Using a boolean value for 'reinit' is deprecated. Use 'return_previous' or 'finish_previous' instead.
+
+[34m[1mwandb[0m: setting up run aaew9q63
+
+[34m[1mwandb[0m: Tracking run with wandb version 0.25.0
+
+[34m[1mwandb[0m: Run data is saved locally in [35m[1mF:\1_REL\Reinforcement-learning-for-Recommendation\bert_ac_longterm\wandb\run-20260619_215403-aaew9q63[0m
+[34m[1mwandb[0m: Run [1m`wandb offline`[0m to turn off syncing.
+
+[34m[1mwandb[0m: Syncing run [33mactor-critic-norerank[0m
+
+[34m[1mwandb[0m:  View project at [34m[4mhttps://wandb.ai/lamgiang-fpt-university/bert4rec-ac-longterm[0m
+
+[34m[1mwandb[0m:  View run at [34m[4mhttps://wandb.ai/lamgiang-fpt-university/bert4rec-ac-longterm/runs/aaew9q63[0m
+
+[ACF] VAL DCG@10 init(=BERT)=4.0847
+
+[ACF] ep 01/30  actor=-0.1585 critic=0.0038 reward=0.0136  VAL DCG@10=4.0725 (best 4.0847,1/8)
+
+[ACF] ep 02/30  actor=-0.1621 critic=0.0019 reward=0.0136  VAL DCG@10=4.0730 (best 4.0847,2/8)
+
+[ACF] ep 03/30  actor=-0.0670 critic=0.0019 reward=0.0153  VAL DCG@10=4.0741 (best 4.0847,3/8)
+
+[ACF] ep 04/30  actor=0.0016 critic=0.0026 reward=0.0194  VAL DCG@10=4.0700 (best 4.0847,4/8)
+
+[ACF] ep 05/30  actor=0.0005 critic=0.0029 reward=0.0215  VAL DCG@10=4.0608 (best 4.0847,5/8)
+
+[ACF] ep 06/30  actor=-0.0339 critic=0.0030 reward=0.0224  VAL DCG@10=4.0589 (best 4.0847,6/8)
+
+[ACF] ep 07/30  actor=0.0300 critic=0.0035 reward=0.0254  VAL DCG@10=4.0597 (best 4.0847,7/8)
+
+[34m[1mwandb[0m: updating run metadata
+
+[ACF] ep 08/30  actor=-0.0341 critic=0.0038 reward=0.0271  VAL DCG@10=4.0383 (best 4.0847,8/8)
+[ACF] EARLY STOP ep 8, best=4.0847 (BERT init=4.0847)
+
+[34m[1mwandb[0m: uploading history steps 0-7, summary, console lines 1-9
+
+[34m[1mwandb[0m: 
+[34m[1mwandb[0m: Run history:
+[34m[1mwandb[0m:   acf/actor_loss ▁▁▄▇▇▆█▆
+[34m[1mwandb[0m:  acf/critic_loss █▁▁▄▅▅▇█
+[34m[1mwandb[0m:        acf/epoch ▁▂▃▄▅▆▇█
+[34m[1mwandb[0m: acf/train_reward ▁▁▂▄▅▆▇█
+[34m[1mwandb[0m:    acf/val_dcg10 ███▇▅▅▅▁
+[34m[1mwandb[0m: 
+[34m[1mwandb[0m: Run summary:
+[34m[1mwandb[0m:   acf/actor_loss -0.03414
+[34m[1mwandb[0m:  acf/critic_loss 0.00385
+[34m[1mwandb[0m:        acf/epoch 8
+[34m[1mwandb[0m: acf/train_reward 0.02707
+[34m[1mwandb[0m:    acf/val_dcg10 4.03833
+[34m[1mwandb[0m: 
+
+[34m[1mwandb[0m:  View run [33mactor-critic-norerank[0m at: [34m[4mhttps://wandb.ai/lamgiang-fpt-university/bert4rec-ac-longterm/runs/aaew9q63[0m
+[34m[1mwandb[0m:  View project at: [34m[4mhttps://wandb.ai/lamgiang-fpt-university/bert4rec-ac-longterm[0m
+[34m[1mwandb[0m: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+
+[34m[1mwandb[0m: Find logs at: [35m[1m.\wandb\run-20260619_215403-aaew9q63\logs[0m
+
+saved actor_norerank.pth | BERT-init VAL DCG@10 = 4.0847
+
+Ending Cell 10-----------------------------------------
+Executing Cell 11--------------------------------------
+Ending Cell 11-----------------------------------------
+Executing Cell 12--------------------------------------
+<Figure size 1500x400 with 3 Axes>
+Ending Cell 12-----------------------------------------
+Executing Cell 13--------------------------------------
+Ending Cell 13-----------------------------------------
+Executing Cell 14--------------------------------------
+Model                                         DCG@5     DCG@10     DCG@20    NDCG@10  Recall@10
+-----------------------------------------------------------------------------------------------
+BERT (short-term)                            2.7359     3.9998     6.3018     0.0367     0.0220
+BERT+AC (no-rerank, full catalog)            2.7359     3.9998     6.3018     0.0367     0.0220
+
+Ending Cell 14-----------------------------------------
+NB3=0
